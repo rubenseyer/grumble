@@ -37,7 +37,10 @@ type Client struct {
 	state   int
 	server  *Server
 
-	udprecv chan []byte
+	udprecv      chan []byte
+	udpallowance int64
+	udprate      int64
+	udplast      int64
 
 	disconnected bool
 
@@ -323,6 +326,23 @@ func (client *Client) udpRecvLoop() {
 			return
 		}
 
+		// "Token bucket" bandwidth limiter
+		now := time.Now().UnixNano()
+		dt := now - client.udplast
+		client.udplast = now
+		client.udpallowance += dt * client.udprate * int64(time.Nanosecond) / int64(time.Second)
+		if client.udpallowance > client.udprate {
+			client.udpallowance = client.udprate
+		}
+		// https://github.com/mumble-voip/mumble/blob/master/src/murmur/Server.cpp#L1000
+		size := int64(20 + 8 + 4 + len(buf))
+		if size > client.udpallowance {
+			client.Printf("Bandwidth limit exceeded (%v > %v)", size, client.udpallowance)
+			continue
+		} else {
+			client.udpallowance -= size
+		}
+
 		kind := (buf[0] >> 5) & 0x07
 
 		switch kind {
@@ -485,6 +505,8 @@ func (client *Client) tlsRecvLoop() {
 				}
 				return
 			}
+
+			client.udprate = int64(client.server.cfg.Uint32Value("MaxBandwidth")) / 8
 
 			client.clientReady = make(chan bool)
 			go client.server.handleAuthenticate(client, msg)
