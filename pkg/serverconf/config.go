@@ -7,6 +7,7 @@ package serverconf
 import (
 	"strconv"
 	"sync"
+	"path/filepath"
 )
 
 var defaultCfg = map[string]string{
@@ -20,6 +21,9 @@ var defaultCfg = map[string]string{
 	"RememberChannel":       "true",
 	"WelcomeText":           "Welcome to this server running <b>Grumble</b>.",
 	"SendVersion":           "true",
+	"LogPath":               "grumble.log",
+	"CertPath":              "cert.pem",
+	"KeyPath":               "key.pem",
 }
 
 type Config struct {
@@ -80,7 +84,7 @@ func (cfg *Config) StringValue(key string) (value string) {
 	return ""
 }
 
-// Get the value of a speific config key as an int
+// Get the value of a specific config key as an int
 func (cfg *Config) IntValue(key string) (intval int) {
 	str := cfg.StringValue(key)
 	intval, _ = strconv.Atoi(str)
@@ -94,9 +98,19 @@ func (cfg *Config) Uint32Value(key string) (uint32val uint32) {
 	return uint32(uintval)
 }
 
-// Get the value fo a sepcific config key as a bool
+// Get the value of a specific config key as a bool
 func (cfg *Config) BoolValue(key string) (boolval bool) {
 	str := cfg.StringValue(key)
 	boolval, _ = strconv.ParseBool(str)
 	return
+}
+
+// Get the value of a specific config key as a path,
+// joined with the path in rel if not absolute.
+func (cfg *Config) PathValue(key string, rel string) (path string) {
+	str := cfg.StringValue(key)
+	if filepath.IsAbs(str) {
+		return filepath.Clean(str)
+	}
+	return filepath.Join(rel, str)
 }

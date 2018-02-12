@@ -6,19 +6,19 @@ package main
 
 import (
 	"errors"
-	"github.com/golang/protobuf/proto"
 	"io"
 	"io/ioutil"
 	"log"
-	"mumble.info/grumble/pkg/acl"
-	"mumble.info/grumble/pkg/ban"
-	"mumble.info/grumble/pkg/freezer"
-	"mumble.info/grumble/pkg/mumbleproto"
-	"mumble.info/grumble/pkg/serverconf"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/golang/protobuf/proto"
+	"mumble.info/grumble/pkg/acl"
+	"mumble.info/grumble/pkg/ban"
+	"mumble.info/grumble/pkg/freezer"
+	"mumble.info/grumble/pkg/mumbleproto"
 )
 
 // Freeze a server to disk and closes the log file.
@@ -418,11 +418,10 @@ func NewServerFromFrozen(name string) (s *Server, err error) {
 		}
 	}
 
-	s, err = NewServer(id)
+	s, err = NewServer(id, configFile.ServerConfig(id, cfgMap))
 	if err != nil {
 		return nil, err
 	}
-	s.cfg = serverconf.New(cfgMap)
 
 	// Unfreeze the server's frozen bans.
 	s.UnfreezeBanList(fs.BanList)

@@ -15,9 +15,15 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"hash"
 	"log"
+	"net"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/golang/protobuf/proto"
 	"mumble.info/grumble/pkg/acl"
 	"mumble.info/grumble/pkg/ban"
 	"mumble.info/grumble/pkg/freezer"
@@ -27,12 +33,6 @@ import (
 	"mumble.info/grumble/pkg/serverconf"
 	"mumble.info/grumble/pkg/sessionpool"
 	"mumble.info/grumble/pkg/web"
-	"net"
-	"net/http"
-	"path/filepath"
-	"strings"
-	"sync"
-	"time"
 )
 
 // The default port a Murmur server listens on
@@ -137,12 +137,16 @@ func (lf clientLogForwarder) Write(incoming []byte) (int, error) {
 }
 
 // Allocate a new Murmur instance
-func NewServer(id int64) (s *Server, err error) {
+func NewServer(id int64, config *serverconf.Config) (s *Server, err error) {
 	s = new(Server)
 
 	s.Id = id
 
-	s.cfg = serverconf.New(nil)
+	if config == nil {
+		s.cfg = serverconf.New(nil)
+	} else {
+		s.cfg = config
+	}
 
 	s.Users = make(map[uint32]*User)
 	s.UserCertMap = make(map[string]*User)
@@ -1421,8 +1425,8 @@ func (server *Server) Start() (err error) {
 	*/
 
 	// Wrap a TLS listener around the TCP connection
-	certFn := filepath.Join(Args.DataDir, "cert.pem")
-	keyFn := filepath.Join(Args.DataDir, "key.pem")
+	certFn := server.cfg.PathValue("CertPath", Args.DataDir)
+	keyFn := server.cfg.PathValue("KeyPath", Args.DataDir)
 	cert, err := tls.LoadX509KeyPair(certFn, keyFn)
 	if err != nil {
 		return err
@@ -1452,9 +1456,9 @@ func (server *Server) Start() (err error) {
 		// Set sensible timeouts, in case no reverse proxy is in front of Grumble.
 		// Non-conforming (or malicious) clients may otherwise block indefinitely and cause
 		// file descriptors (or handles, depending on your OS) to leak and/or be exhausted
-		ReadTimeout: 5 * time.Second,
+		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		IdleTimeout: 2 * time.Minute,
+		IdleTimeout:  2 * time.Minute,
 	}
 	go func() {
 		err := server.webhttp.ListenAndServeTLS("", "")

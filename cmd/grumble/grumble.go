@@ -8,15 +8,18 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"mumble.info/grumble/pkg/blobstore"
-	"mumble.info/grumble/pkg/logtarget"
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"mumble.info/grumble/pkg/blobstore"
+	"mumble.info/grumble/pkg/logtarget"
+	"mumble.info/grumble/pkg/serverconf"
 )
 
 var servers map[int64]*Server
 var blobStore blobstore.BlobStore
+var configFile *serverconf.ConfigFile
 
 func main() {
 	var err error
@@ -35,10 +38,42 @@ func main() {
 	}
 	dataDir.Close()
 
-	// Set up logging
-	err = logtarget.Target.OpenFile(Args.LogPath)
+	// Open the config file
+	var configFn string
+	if Args.ConfigPath != "" {
+		configFn = Args.ConfigPath
+	} else {
+		configFn = filepath.Join(Args.DataDir, "grumble.ini")
+	}
+	if filepath.Ext(configFn) == ".ini" {
+		// Create it if it doesn't exist
+		configFd, err := os.OpenFile(configFn, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0700)
+		if err == nil {
+			configFd.WriteString(serverconf.DefaultConfigFile)
+			log.Fatalf("Default config written to %v\n", configFn)
+			configFd.Close()
+		} else if err != nil && !os.IsExist(err) {
+			log.Fatalf("Unable to open config file (%v): %v", configFn, err)
+			return
+		}
+	}
+	configFile, err = serverconf.NewConfigFile(configFn)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to open log file (%v): %v", Args.LogPath, err)
+		log.Fatalf("Unable to open config file (%v): %v", configFn, err)
+		return
+	}
+	config := configFile.GlobalConfig()
+
+	// Set up logging
+	var logFn string
+	if Args.LogPath != "" {
+		logFn = Args.LogPath
+	} else {
+		logFn = config.PathValue("LogPath", Args.DataDir)
+	}
+	err = logtarget.Target.OpenFile(logFn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to open log file (%v): %v", logFn, err)
 		return
 	}
 	log.SetPrefix("[G] ")
@@ -64,9 +99,9 @@ func main() {
 	// and corresponding certificate.
 	// These are used as the default certificate of all virtual servers
 	// and the SSH admin console, but can be overridden using the "key"
-	// and "cert" arguments to Grumble.
-	certFn := filepath.Join(Args.DataDir, "cert.pem")
-	keyFn := filepath.Join(Args.DataDir, "key.pem")
+	// and "cert" arguments to Grumble. todo(rubenseyer) implement override by cli
+	certFn := config.PathValue("CertPath", Args.DataDir)
+	keyFn := config.PathValue("KeyPath", Args.DataDir)
 	shouldRegen := false
 	if Args.RegenKeys {
 		shouldRegen = true
@@ -163,10 +198,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to read file from data directory: %v", err.Error())
 	}
-	// The data dir file descriptor.
+	// The servers dir file descriptor.
 	err = serversDir.Close()
 	if err != nil {
-		log.Fatalf("Unable to close data directory: %v", err.Error())
+		log.Fatalf("Unable to close servers directory: %v", err.Error())
 		return
 	}
 
@@ -190,7 +225,7 @@ func main() {
 
 	// If no servers were found, create the default virtual server.
 	if len(servers) == 0 {
-		s, err := NewServer(1)
+		s, err := NewServer(1, configFile.ServerConfig(1, nil))
 		if err != nil {
 			log.Fatalf("Couldn't start server: %s", err.Error())
 		}
