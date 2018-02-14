@@ -74,8 +74,8 @@ type Server struct {
 
 	incoming       chan *Message
 	voicebroadcast chan *VoiceBroadcast
-	cfgUpdate      chan *KeyValuePair
 	tempRemove     chan *Channel
+	//cfgUpdate      chan *KeyValuePair
 
 	// Signals to the server that a client has been successfully
 	// authenticated.
@@ -196,7 +196,7 @@ func (server *Server) SetSuperUserPassword(password string) {
 	key := "SuperUserPassword"
 	val := "sha1$" + salt + "$" + digest
 	server.cfg.Set(key, val)
-	server.cfgUpdate <- &KeyValuePair{Key: key, Value: val}
+	//server.cfgUpdate <- &KeyValuePair{Key: key, Value: val}
 }
 
 // Check whether password matches the set SuperUser password.
@@ -416,12 +416,12 @@ func (server *Server) handlerLoop() {
 			server.finishAuthenticate(client)
 
 		// Disk freeze config update
-		case kvp := <-server.cfgUpdate:
+		/*case kvp := <-server.cfgUpdate:
 			if !kvp.Reset {
 				server.UpdateConfig(kvp.Key, kvp.Value)
 			} else {
 				server.ResetConfig(kvp.Key)
-			}
+			}*/
 
 		// Server registration update
 		// Tick every hour + a minute offset based on the server id.
@@ -1328,7 +1328,7 @@ func (server *Server) initPerLaunchData() {
 	server.bye = make(chan bool)
 	server.incoming = make(chan *Message)
 	server.voicebroadcast = make(chan *VoiceBroadcast)
-	server.cfgUpdate = make(chan *KeyValuePair)
+	//server.cfgUpdate = make(chan *KeyValuePair)
 	server.tempRemove = make(chan *Channel, 1)
 	server.clientAuthenticated = make(chan *Client)
 }
@@ -1343,7 +1343,7 @@ func (server *Server) cleanPerLaunchData() {
 	server.bye = nil
 	server.incoming = nil
 	server.voicebroadcast = nil
-	server.cfgUpdate = nil
+	//server.cfgUpdate = nil
 	server.tempRemove = nil
 	server.clientAuthenticated = nil
 }
