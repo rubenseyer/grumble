@@ -9,6 +9,7 @@ var murmurCompatRules = map[string]string{
 	"welcometext":        "WelcomeText",
 	"port":               "Port",
 	"host":               "Address",
+	"serverpassword":     "ServerPassword",
 	"bandwidth":          "MaxBandwidth",
 	"users":              "MaxUsers",
 	"textmessagelength":  "MaxTextMessageLength",
@@ -16,7 +17,8 @@ var murmurCompatRules = map[string]string{
 	"allowhtml":          "AllowHTML",
 	"sslCert":            "CertPath",
 	"sslKey":             "KeyPath",
-	"sendversion":        "SendVersion",
+	"sendversion":        "SendOSInfo",
+	"allowping":          "AllowPing",
 	"usersperchannel":    "MaxUsersPerChannel",
 	"defaultchannel":     "DefaultChannel",
 	"rememberchannel":    "RememberChannel",
@@ -38,8 +40,6 @@ func TranslateMurmur(source map[string]string) (target map[string]string) {
 			target[kgrumble] = v
 		}
 		switch kmurmur {
-		case "serverpassword":
-			log.Println("* Grumble does not yet support server-wide passwords.")
 		case "database":
 			log.Println("* Grumble does not yet support Murmur databases directly (see issue #21 on github).")
 			if driver, ok := source["dbDriver"]; !ok || driver == "QSQLITE" {

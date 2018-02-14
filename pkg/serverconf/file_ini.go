@@ -34,13 +34,12 @@ func (f *inicfg) SubMap(sub int64) map[string]string {
 	return f.file.Section(strconv.FormatInt(sub, 10)).KeysHash()
 }
 
-// todo(rubenseyer): not all of these even work.. make sure to implement them
 var DefaultConfigFile = `# Grumble configuration file.
 #
 # The commented out settings represent the defaults.
 # Settings are additionally persisted separately for each virtual server,
 # but this configuration will always override them.
-# To revert a persisted value to defaults, set a key with an empty value.
+# To revert a persisted value to defaults, set a key to an empty value.
 # Make sure to enclose values containing # or ; in double quotes or backticks.
 
 # Address to bind the listeners to.
@@ -48,12 +47,15 @@ var DefaultConfigFile = `# Grumble configuration file.
 
 # Port is the port to bind the native Mumble protocol to.
 # WebPort is the port to bind the WebSocket Mumble protocol to.
-# They are incremented for each virtual server.
+# They are incremented for each virtual server (if set globally).
 #Port = 64738
 #WebPort = 443
 
 # "Message of the day" HTML string sent to connecting clients.
 #WelcomeText = "Welcome to this server running <b>Grumble</b>."
+
+# Password to join the server.
+#ServerPassword =
 
 # Maximum bandwidth (in bits per second) per client for voice.
 # Grumble does not yet enforce this limit, but some clients nicely follow it.
@@ -74,9 +76,11 @@ var DefaultConfigFile = `# Grumble configuration file.
 # Whether users will rejoin the last channel they were in.
 #RememberChannel
 
-# Whether to include server version and server os in ping response.
-#SendVersion
+# Whether to include server OS info in ping response.
 #SendOSInfo
+
+# Whether to respond to pings from the Connect dialog.
+#AllowPing
 
 # Path to the log file (relative to the data directory).
 #LogPath = grumble.log
@@ -97,7 +101,7 @@ var DefaultConfigFile = `# Grumble configuration file.
 #RegisterWebUrl =
 
 # Subsections set options specific to the given virtual server.
-# To revert a persisted value to defaults, set a key with an empty value.
+# To revert a persisted or global value to defaults, set a key to an empty value.
 #[1]
 #Port =
 `

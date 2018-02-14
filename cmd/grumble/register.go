@@ -51,6 +51,9 @@ func (server *Server) IsPublic() bool {
 	if len(server.cfg.StringValue("RegisterWebUrl")) == 0 {
 		return false
 	}
+	if !server.cfg.BoolValue("AllowPing") {
+		return false
+	}
 	return true
 }
 

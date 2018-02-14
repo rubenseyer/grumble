@@ -5,9 +5,9 @@
 package serverconf
 
 import (
+	"path/filepath"
 	"strconv"
 	"sync"
-	"path/filepath"
 )
 
 var defaultCfg = map[string]string{
@@ -20,7 +20,8 @@ var defaultCfg = map[string]string{
 	"DefaultChannel":        "0",
 	"RememberChannel":       "true",
 	"WelcomeText":           "Welcome to this server running <b>Grumble</b>.",
-	"SendVersion":           "true",
+	"SendOSInfo":            "true",
+	"AllowPing":             "true",
 	"LogPath":               "grumble.log",
 	"CertPath":              "cert.pem",
 	"KeyPath":               "key.pem",

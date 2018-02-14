@@ -178,6 +178,15 @@ func (server *Server) RootChannel() *Channel {
 	return root
 }
 
+// Get a pointer to the default channel
+func (server *Server) DefaultChannel() *Channel {
+	channel, exists := server.Channels[server.cfg.IntValue("DefaultChannel")]
+	if !exists {
+		return server.RootChannel()
+	}
+	return channel
+}
+
 // Set password as the new SuperUser password
 func (server *Server) SetSuperUserPassword(password string) {
 	saltBytes := make([]byte, 24)
@@ -251,7 +260,14 @@ func (server *Server) handleIncomingClient(conn net.Conn) (err error) {
 	client.lf = &clientLogForwarder{client, server.Logger}
 	client.Logger = log.New(client.lf, "", 0)
 
-	client.session = server.pool.Get()
+	client.session, err = server.pool.Get()
+	if err != nil {
+		// Server is full. Murmur just closes the connection here anyway,
+		// so don't bother sending a Reject_ServerFull
+		client.Printf("Server is full, rejecting %v", conn.RemoteAddr())
+		conn.Close()
+		return nil
+	}
 	client.Printf("New connection: %v (%v)", conn.RemoteAddr(), client.Session())
 
 	client.tcpaddr = addr.(*net.TCPAddr)
@@ -516,6 +532,15 @@ func (server *Server) handleAuthenticate(client *Client, msg *Message) {
 				client.user = user
 			}
 		}
+
+		// Otherwise, the user is unregistered. If there is a server-wide password, they now need it.
+		if client.user == nil {
+			serverpw := server.cfg.StringValue("ServerPassword")
+			if serverpw != "" && (auth.Password == nil || *auth.Password != serverpw) {
+				client.RejectAuth(mumbleproto.Reject_WrongServerPW, "")
+				return
+			}
+		}
 	}
 
 	// Setup the cryptstate for the client.
@@ -599,8 +624,8 @@ func (server *Server) finishAuthenticate(client *Client) {
 	server.hclients[host] = append(server.hclients[host], client)
 	server.hmutex.Unlock()
 
-	channel := server.RootChannel()
-	if client.IsRegistered() {
+	channel := server.DefaultChannel()
+	if server.cfg.BoolValue("RememberChannel") && client.IsRegistered() {
 		lastChannel := server.Channels[client.user.LastChannelId]
 		if lastChannel != nil {
 			channel = lastChannel
@@ -973,6 +998,9 @@ func (server *Server) udpListenLoop() {
 
 		// Length 12 is for ping datagrams from the ConnectDialog.
 		if nread == 12 {
+			if !server.cfg.BoolValue("AllowPing") {
+				return
+			}
 			readbuf := bytes.NewBuffer(buf)
 			var (
 				tmp32 uint32
@@ -982,7 +1010,7 @@ func (server *Server) udpListenLoop() {
 			_ = binary.Read(readbuf, binary.BigEndian, &rand)
 
 			buffer := bytes.NewBuffer(make([]byte, 0, 24))
-			_ = binary.Write(buffer, binary.BigEndian, uint32((1<<16)|(2<<8)|2))
+			_ = binary.Write(buffer, binary.BigEndian, uint32((1<<16)|(2<<8)|4))
 			_ = binary.Write(buffer, binary.BigEndian, rand)
 			_ = binary.Write(buffer, binary.BigEndian, uint32(len(server.clients)))
 			_ = binary.Write(buffer, binary.BigEndian, server.cfg.Uint32Value("MaxUsers"))
@@ -1320,7 +1348,7 @@ func isTimeout(err error) bool {
 
 // Initialize the per-launch data
 func (server *Server) initPerLaunchData() {
-	server.pool = sessionpool.New()
+	server.pool = sessionpool.New(server.cfg.Uint32Value("MaxUsers"))
 	server.clients = make(map[uint32]*Client)
 	server.hclients = make(map[string][]*Client)
 	server.hpclients = make(map[string]*Client)

@@ -8,13 +8,14 @@ import (
 	"crypto/aes"
 	"crypto/tls"
 	"fmt"
+	"net"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"mumble.info/grumble/pkg/acl"
 	"mumble.info/grumble/pkg/ban"
 	"mumble.info/grumble/pkg/freezer"
 	"mumble.info/grumble/pkg/mumbleproto"
-	"net"
-	"time"
 )
 
 type Message struct {
@@ -592,7 +593,7 @@ func (server *Server) handleUserStateMessage(client *Client, msg *Message) {
 			return
 		}
 
-		maxChannelUsers := server.cfg.IntValue("MaxChannelUsers")
+		maxChannelUsers := server.cfg.IntValue("MaxUsersPerChannel")
 		if maxChannelUsers != 0 && len(dstChan.clients) >= maxChannelUsers {
 			client.sendPermissionDeniedFallback(mumbleproto.PermissionDenied_ChannelFull,
 				0x010201, "Channel is full")
