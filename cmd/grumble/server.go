@@ -1463,15 +1463,18 @@ func (server *Server) Start() (err error) {
 		Certificates: []tls.Certificate{cert},
 		ClientAuth:   tls.RequestClientCert,
 	}
+	ciphersstr := server.cfg.StringValue("TLSCipherSuites")
+	if ciphersstr != "" {
+		server.tlscfg.CipherSuites = serverconf.ParseCipherlist(ciphersstr)
+		server.tlscfg.PreferServerCipherSuites = true
+	}
 	server.tlsl = tls.NewListener(server.tcpl, server.tlscfg)
 
 	// Create HTTP server and WebSocket "listener"
 	webaddr := &net.TCPAddr{IP: net.ParseIP(host), Port: webport}
-	server.webtlscfg = &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		ClientAuth:   tls.NoClientCert,
-		NextProtos:   []string{"http/1.1"},
-	}
+	server.webtlscfg = server.tlscfg.Clone()
+	server.webtlscfg.ClientAuth = tls.NoClientCert
+	server.webtlscfg.NextProtos = []string{"http/1.1"}
 	server.webwsl = web.NewListener(webaddr, server.Logger)
 	mux := http.NewServeMux()
 	mux.Handle("/", server.webwsl)

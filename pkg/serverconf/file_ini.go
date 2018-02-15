@@ -1,9 +1,8 @@
 package serverconf
 
 import (
-	"strconv"
-
 	"path/filepath"
+	"strconv"
 
 	"gopkg.in/ini.v1"
 )

@@ -17,6 +17,7 @@ var murmurCompatRules = map[string]string{
 	"allowhtml":          "AllowHTML",
 	"sslCert":            "CertPath",
 	"sslKey":             "KeyPath",
+	"sslCiphers":         "TLSCipherSuites",
 	"sendversion":        "SendOSInfo",
 	"allowping":          "AllowPing",
 	"usersperchannel":    "MaxUsersPerChannel",
@@ -47,8 +48,6 @@ func TranslateMurmur(source map[string]string) (target map[string]string) {
 			}
 		case "sslDHParams":
 			log.Println("* Go does not implement DHE modes in TLS, so the configured dhparams are ignored.")
-		case "sslCiphers":
-			log.Println("* Support for changing TLS ciphers is not implemented yet.")
 		case "ice":
 			log.Println("* Grumble does not support ZeroC ICE.")
 		case "grpc":
