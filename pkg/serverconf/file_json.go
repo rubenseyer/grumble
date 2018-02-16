@@ -27,6 +27,7 @@ func newjsoncfg(path string) (*jsoncfg, error) {
 	defer jpp.Close()
 
 	dec := json.NewDecoder(jpp)
+	dec.UseNumber()
 	t, err := dec.Token()
 	if err != nil {
 		return nil, err
