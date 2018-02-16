@@ -832,29 +832,3 @@ func (server *Server) UpdateFrozenBans(bans []ban.Ban) {
 	}
 	server.numLogOps += 1
 }
-
-// Write an updated config value to the datastore.
-/*func (server *Server) UpdateConfig(key, value string) {
-	fcfg := &freezer.ConfigKeyValuePair{
-		Key:   proto.String(key),
-		Value: proto.String(value),
-	}
-	err := server.freezelog.Put(fcfg)
-	if err != nil {
-		server.Fatal(err)
-	}
-	server.numLogOps += 1
-}*/
-
-// Write to the freezelog that the config with key
-// has been reset to its default value.
-/*func (server *Server) ResetConfig(key string) {
-	fcfg := &freezer.ConfigKeyValuePair{
-		Key: proto.String(key),
-	}
-	err := server.freezelog.Put(fcfg)
-	if err != nil {
-		server.Fatal(err)
-	}
-	server.numLogOps += 1
-}*/
