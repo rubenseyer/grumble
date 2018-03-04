@@ -1453,7 +1453,11 @@ func (server *Server) Start() (err error) {
 	}
 	ciphersstr := server.cfg.StringValue("TLSCipherSuites")
 	if ciphersstr != "" {
-		server.tlscfg.CipherSuites = serverconf.ParseCipherlist(ciphersstr)
+		var invalid []string
+		server.tlscfg.CipherSuites, invalid = serverconf.ParseCipherlist(ciphersstr)
+		for _, cipher := range invalid {
+			log.Printf("Ignoring invalid or unsupported cipher \"%v\"", cipher)
+		}
 		server.tlscfg.PreferServerCipherSuites = true
 	}
 	server.tlsl = tls.NewListener(server.tcpl, server.tlscfg)

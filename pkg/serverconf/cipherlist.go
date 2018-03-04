@@ -2,7 +2,6 @@ package serverconf
 
 import (
 	"crypto/tls"
-	"log"
 	"strings"
 )
 
@@ -62,16 +61,17 @@ var cipherLookup = map[string]uint16{
 // ParseCipherlist parses a list of cipher suites separated by colons.
 // It supports both RFC and OpenSSL names, but does not support OpenSSL
 // cipher strings representing categories of cipher suites.
-func ParseCipherlist(list string) (ciphers []uint16) {
+func ParseCipherlist(list string) (ciphers []uint16, invalid []string) {
 	strciphers := strings.Split(list, ":")
 	ciphers = make([]uint16, 0, len(strciphers))
+	invalid = make([]string, 0)
 	for _, v := range strciphers {
 		c, ok := cipherLookup[v]
 		if ok {
 			ciphers = append(ciphers, c)
 		} else {
-			log.Printf("Ignoring invalid or unsupported cipher \"%v\"", v)
+			invalid = append(invalid, v)
 		}
 	}
-	return ciphers
+	return
 }
