@@ -72,7 +72,7 @@ func (server *Server) Freeze() (fs *freezer.Server, err error) {
 	fs = new(freezer.Server)
 
 	// Freeze all config kv-pairs
-	allCfg := server.cfg.GetAll()
+	allCfg := server.cfg.GetAllPersistent()
 	for k, v := range allCfg {
 		fs.Config = append(fs.Config, &freezer.ConfigKeyValuePair{
 			Key:   proto.String(k),

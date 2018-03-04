@@ -32,36 +32,15 @@ func NewConfigFile(path string) (*ConfigFile, error) {
 // GlobalConfig returns a new *serverconf.Config representing the top-level
 // (global) configuration.
 func (c *ConfigFile) GlobalConfig() *Config {
-	return New(c.GlobalMap())
+	return New(nil, c.GlobalMap())
 }
 
-// ServerConfig returns a new *serverconf.Config representing the union
-// between the global configuration and the server-specific overrides.
-// Optionally a base map m which to merge into may be passed. This map
+// ServerConfig returns a new *serverconf.Config with the fallback representing
+// the union between the global configuration and the server-specific overrides.
+// Optionally a persistent map which has priority may be passed. This map
 // is consumed and cannot be reused.
-func (c *ConfigFile) ServerConfig(id int64, m map[string]string) *Config {
-	if m == nil {
-		m = c.GlobalMap()
-
-		// Strip the global keys so they don't get repeated in the freeze.
-		for k := range globalKeys {
-			delete(m, k)
-		}
-	} else {
-		// Merge the global config into the base map
-		for k, v := range c.GlobalMap() {
-			if _, ok := globalKeys[k]; ok {
-				// Ignore the global keys so they don't get repeated in the freeze.
-				continue
-			}
-			if v != "" {
-				m[k] = v
-			} else {
-				// Allow unset of base values through empty keys.
-				delete(m, k)
-			}
-		}
-	}
+func (c *ConfigFile) ServerConfig(id int64, persistentMap map[string]string) *Config {
+	m := c.GlobalMap()
 
 	// Some server specific values from the global config must be offset.
 	if v, ok := m["Port"]; ok {
@@ -86,5 +65,5 @@ func (c *ConfigFile) ServerConfig(id int64, m map[string]string) *Config {
 			delete(m, k)
 		}
 	}
-	return New(m)
+	return New(persistentMap, m)
 }

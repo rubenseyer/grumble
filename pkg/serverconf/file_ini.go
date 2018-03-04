@@ -36,9 +36,7 @@ func (f *inicfg) SubMap(sub int64) map[string]string {
 var DefaultConfigFile = `# Grumble configuration file.
 #
 # The commented out settings represent the defaults.
-# Settings are additionally persisted separately for each virtual server,
-# but this configuration will always override them.
-# To revert a persisted value to defaults, set a key to an empty value.
+# Options here may be overridden by virtual server specific configuration.
 # Make sure to enclose values containing # or ; in double quotes or backticks.
 
 # Address to bind the listeners to.
@@ -86,7 +84,7 @@ var DefaultConfigFile = `# Grumble configuration file.
 
 # Path to TLS certificate and key (relative to the data directory).
 # The certificate needs to have the entire chain concatenated to be validate.
-# If these paths do not exist, Grumble will autogenerate a certificate
+# If these paths do not exist, Grumble will autogenerate a certificate.
 #CertPath = cert.pem
 #KeyPath = key.pem
 
@@ -100,7 +98,7 @@ var DefaultConfigFile = `# Grumble configuration file.
 #RegisterWebUrl =
 
 # Subsections set options specific to the given virtual server.
-# To revert a persisted or global value to defaults, set a key to an empty value.
+# To revert a globally set value to defaults, set a key to an empty value.
 #[1]
 #Port =
 `

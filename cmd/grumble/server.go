@@ -142,7 +142,7 @@ func NewServer(id int64, config *serverconf.Config) (s *Server, err error) {
 	s.Id = id
 
 	if config == nil {
-		s.cfg = serverconf.New(nil)
+		s.cfg = serverconf.New(nil, nil)
 	} else {
 		s.cfg = config
 	}

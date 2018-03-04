@@ -28,26 +28,28 @@ var defaultCfg = map[string]string{
 }
 
 type Config struct {
-	cfgMap map[string]string
-	mutex  sync.RWMutex
+	fallbackMap   map[string]string
+	persistentMap map[string]string
+	mutex         sync.RWMutex
 }
 
-// Create a new Config using cfgMap as the intial internal config map.
-// If cfgMap is nil, ConfigWithMap will create a new config map.
-func New(cfgMap map[string]string) *Config {
-	if cfgMap == nil {
-		cfgMap = make(map[string]string)
+// New returns a new Config using persistentMap as the initial internal config map.
+// The map persistentMap may not be reused. If set to nil, a new map is created.
+// Optionally, defaults may be passed in fallbackMap. This map is only read, not written.
+func New(persistentMap, fallbackMap map[string]string) *Config {
+	if persistentMap == nil {
+		persistentMap = make(map[string]string)
 	}
-	return &Config{cfgMap: cfgMap}
+	return &Config{persistentMap: persistentMap, fallbackMap: fallbackMap}
 }
 
-// Get a copy of the Config's internal config map
-func (cfg *Config) GetAll() (all map[string]string) {
+// GetAllPersistent returns a copy of the internal persistent key-value map.
+func (cfg *Config) GetAllPersistent() (all map[string]string) {
 	cfg.mutex.RLock()
 	defer cfg.mutex.RUnlock()
 
 	all = make(map[string]string)
-	for k, v := range cfg.cfgMap {
+	for k, v := range cfg.persistentMap {
 		all[k] = v
 	}
 	return
@@ -57,14 +59,14 @@ func (cfg *Config) GetAll() (all map[string]string) {
 func (cfg *Config) Set(key string, value string) {
 	cfg.mutex.Lock()
 	defer cfg.mutex.Unlock()
-	cfg.cfgMap[key] = value
+	cfg.persistentMap[key] = value
 }
 
 // Reset the value of a config key
 func (cfg *Config) Reset(key string) {
 	cfg.mutex.Lock()
 	defer cfg.mutex.Unlock()
-	delete(cfg.cfgMap, key)
+	delete(cfg.persistentMap, key)
 }
 
 // Get the value of a specific config key encoded as a string
@@ -72,7 +74,12 @@ func (cfg *Config) StringValue(key string) (value string) {
 	cfg.mutex.RLock()
 	defer cfg.mutex.RUnlock()
 
-	value, exists := cfg.cfgMap[key]
+	value, exists := cfg.persistentMap[key]
+	if exists {
+		return value
+	}
+
+	value, exists = cfg.fallbackMap[key]
 	if exists {
 		return value
 	}
