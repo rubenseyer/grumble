@@ -1,8 +1,6 @@
 package serverconf
 
 import (
-	"errors"
-	"path/filepath"
 	"strconv"
 )
 
@@ -24,15 +22,7 @@ type ConfigFile struct {
 
 func NewConfigFile(path string) (*ConfigFile, error) {
 	var f cfg
-	var err error
-	switch filepath.Ext(path) {
-	case ".ini":
-		f, err = newinicfg(path)
-	case ".json":
-		f, err = newjsoncfg(path)
-	default:
-		return nil, errors.New("unknown config file format")
-	}
+	f, err := newinicfg(path)
 	if err != nil {
 		return nil, err
 	}
