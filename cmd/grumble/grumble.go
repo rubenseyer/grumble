@@ -98,6 +98,23 @@ func main() {
 	log.Printf("Grumble")
 	log.Printf("Using data directory: %s", Args.DataDir)
 
+	// Warn on some unsupported configuration options for users migrating from Murmur
+	if config.StringValue("database") != "" {
+		log.Println("* Grumble does not yet support Murmur databases directly (see issue #21 on github).")
+		if driver := config.StringValue("dbDriver"); driver == "QSQLITE" {
+			log.Println("  To convert a previous SQLite database, use the --import-murmurdb flag.")
+		}
+	}
+	if config.StringValue("sslDHParams") != "" {
+		log.Println("* Go does not implement DHE modes in TLS, so the configured dhparams are ignored.")
+	}
+	if config.StringValue("ice") != "" {
+		log.Println("* Grumble does not support ZeroC ICE.")
+	}
+	if config.StringValue("grpc") != "" {
+		log.Println("* Grumble does not yet support gRPC (see issue #23 on github).")
+	}
+
 	// Open the blobstore.  If the directory doesn't
 	// already exist, create the directory and open
 	// the blobstore.

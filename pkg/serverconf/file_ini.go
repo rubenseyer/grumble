@@ -1,15 +1,11 @@
 package serverconf
 
 import (
-	"path/filepath"
-	"strconv"
-
 	"gopkg.in/ini.v1"
 )
 
 type inicfg struct {
-	file         *ini.File
-	murmurCompat bool
+	file *ini.File
 }
 
 func newinicfg(path string) (*inicfg, error) {
@@ -18,19 +14,11 @@ func newinicfg(path string) (*inicfg, error) {
 		return nil, err
 	}
 	file.BlockMode = false // read only, avoid locking
-	return &inicfg{file, filepath.Base(path) == "murmur.ini"}, nil
+	return &inicfg{file}, nil
 }
 
 func (f *inicfg) GlobalMap() map[string]string {
-	if !f.murmurCompat {
-		return f.file.Section("").KeysHash()
-	} else {
-		return TranslateMurmur(f.file.Section("").KeysHash())
-	}
-}
-
-func (f *inicfg) SubMap(sub int64) map[string]string {
-	return f.file.Section(strconv.FormatInt(sub, 10)).KeysHash()
+	return f.file.Section("").KeysHash()
 }
 
 var DefaultConfigFile = `# Grumble configuration file.
@@ -96,9 +84,4 @@ var DefaultConfigFile = `# Grumble configuration file.
 #RegisterHost =
 #RegisterPassword =
 #RegisterWebUrl =
-
-# Subsections set options specific to the given virtual server.
-# To revert a globally set value to defaults, set a key to an empty value.
-#[1]
-#Port =
 `

@@ -4,16 +4,9 @@ import (
 	"strconv"
 )
 
-var globalKeys = map[string]bool{
-	"LogPath": true,
-}
-
 type cfg interface {
 	// GlobalMap returns a copy of the top-level (global) configuration map.
 	GlobalMap() map[string]string
-
-	// SubMap returns a copy of the server-specific (if existing) configuration map.
-	SubMap(sub int64) map[string]string
 }
 
 type ConfigFile struct {
@@ -36,13 +29,14 @@ func (c *ConfigFile) GlobalConfig() *Config {
 }
 
 // ServerConfig returns a new *serverconf.Config with the fallback representing
-// the union between the global configuration and the server-specific overrides.
+// the global configuration with server-specific values incremented by id.
 // Optionally a persistent map which has priority may be passed. This map
 // is consumed and cannot be reused.
 func (c *ConfigFile) ServerConfig(id int64, persistentMap map[string]string) *Config {
 	m := c.GlobalMap()
 
 	// Some server specific values from the global config must be offset.
+	// These are read differently by the server as well.
 	if v, ok := m["Port"]; ok {
 		i, err := strconv.ParseInt(v, 10, 64)
 		if err == nil {
@@ -56,14 +50,5 @@ func (c *ConfigFile) ServerConfig(id int64, persistentMap map[string]string) *Co
 		}
 	}
 
-	// Merge the server-specific override (if one exists).
-	for k, v := range c.SubMap(id) {
-		if v != "" {
-			m[k] = v
-		} else {
-			// Allow unset of global values through empty keys.
-			delete(m, k)
-		}
-	}
 	return New(persistentMap, m)
 }
