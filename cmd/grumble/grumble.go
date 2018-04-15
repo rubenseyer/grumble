@@ -131,8 +131,8 @@ func main() {
 	// Check whether we should regenerate the default global keypair
 	// and corresponding certificate.
 	// These are used as the default certificate of all virtual servers.
-	certFn := config.PathValue("CertPath", Args.DataDir)
-	keyFn := config.PathValue("KeyPath", Args.DataDir)
+	certFn := config.PathValue("sslCert", Args.DataDir)
+	keyFn := config.PathValue("sslKey", Args.DataDir)
 	shouldRegen := false
 	if Args.RegenKeys {
 		shouldRegen = true
